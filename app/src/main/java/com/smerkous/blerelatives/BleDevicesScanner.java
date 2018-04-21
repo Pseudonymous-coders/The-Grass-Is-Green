@@ -16,7 +16,7 @@ import java.util.UUID;
 
 public class BleDevicesScanner {
     private static final String TAG = BleDevicesScanner.class.getSimpleName();
-    private static final long kScanPeriod = 20 * 1000; // scan period in milliseconds
+    private static final long kScanPeriod = 5 * 1000; // scan period in milliseconds
 
     // Data
     private final BluetoothAdapter mBluetoothAdapter;
@@ -25,6 +25,7 @@ public class BleDevicesScanner {
     private List<UUID> mServicesToDiscover;
     private final Handler mMainThreadHandler = new Handler(Looper.getMainLooper());
     private final LeScansPoster mLeScansPoster;
+    private FinishedScanCallback scanCallback = null;
 
     //
     private BluetoothAdapter.LeScanCallback mLeScanCallback =
@@ -41,10 +42,11 @@ public class BleDevicesScanner {
                 }
             };
 
-    public BleDevicesScanner(BluetoothAdapter adapter, UUID[] servicesToDiscover, BluetoothAdapter.LeScanCallback callback) {
+    public BleDevicesScanner(BluetoothAdapter adapter, UUID[] servicesToDiscover, BluetoothAdapter.LeScanCallback callback, FinishedScanCallback finishedScanCallback) {
         mBluetoothAdapter = adapter;
         mServicesToDiscover = servicesToDiscover == null ? null : Arrays.asList(servicesToDiscover);
         mLeScansPoster = new LeScansPoster(callback);
+        scanCallback = finishedScanCallback;
 
         mHandler = new Handler();
     }
@@ -58,7 +60,8 @@ public class BleDevicesScanner {
                     if (mIsScanning) {
                         Log.d(TAG, "Scan timer expired. Restart scan");
                         stop();
-                        start();
+                        scanCallback.scanFinished();
+                        //start();
                     }
                 }
             }, kScanPeriod);
@@ -144,5 +147,9 @@ public class BleDevicesScanner {
         }
 
         return uuids;
+    }
+
+    public static interface FinishedScanCallback {
+        void scanFinished();
     }
 }
