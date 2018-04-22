@@ -1,5 +1,9 @@
 <resources>
-    <string name="app_name">BleRelatives</string>
+    <string name="app_name">The Grass Is Green</string>
     <string name="report_bluetooth_not_available">Bluetooth is not supported on this device</string>
     <string name="report_ble_not_available">BLE is not supported on this device</string>
+    <string name="accessibility_service_description">Views currently running apps</string>
+
+    <string name="title_activity_block_app">How green is your grass?</string>
+    <string name="blocked_app_text">This app was blocked</string>
 </resources>
