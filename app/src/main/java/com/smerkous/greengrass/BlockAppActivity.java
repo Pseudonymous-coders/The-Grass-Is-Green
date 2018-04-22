@@ -35,7 +35,9 @@ import static com.smerkous.greengrass.MainActivity.Log;
 public class BlockAppActivity extends AppCompatActivity {
     private RelativeLayout layout;
     private String packageName = null;
-    private static boolean runDatabase = true;
+    private static boolean
+            runDatabase = true,
+            byBLE = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +46,7 @@ public class BlockAppActivity extends AppCompatActivity {
 
         try {
             packageName = getIntent().getStringExtra("package");
+            byBLE = getIntent().getBooleanExtra("ble", false);
         } catch (NullPointerException ignored) {}
 
 
@@ -59,7 +62,7 @@ public class BlockAppActivity extends AppCompatActivity {
 
                 String appName = manager.getApplicationLabel(manager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)).toString();
                 TextView imageGrass = findViewById(R.id.block_grass);
-                String blockText = appName + " has been blocked";
+                String blockText = appName + " has been blocked" + (byBLE ? "\nBy Dinner Table Beacon" : "");
                 imageGrass.setText(blockText);
             } catch (PackageManager.NameNotFoundException e) {
                 e.printStackTrace();
@@ -97,7 +100,7 @@ public class BlockAppActivity extends AppCompatActivity {
                     @Override
                     public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
                         if(runDatabase) {
-                            Log("Got app update!");
+                            Log("Checking to see if " + packageName + " has been removed from the list!");
                             parseSnapShot(documentSnapshot);
                         }
                     }

@@ -154,6 +154,11 @@ public class GrassService extends AccessibilityService implements BleUtils.Reset
         Intent block = new Intent(getApplicationContext(), BlockAppActivity.class);
         block.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_TASK);
         block.putExtra("package", packageName);
+        if(appWatch.containsKey(packageName)) {
+            block.putExtra("ble", appWatch.get(packageName).contains("BLE"));
+        } else {
+            block.putExtra("ble", false);
+        }
         startActivity(block);
     }
 
@@ -402,13 +407,17 @@ public class GrassService extends AccessibilityService implements BleUtils.Reset
                             }
                         }
 
-                        /*if(scannedDevices.keySet().size() > 0) {
-                            appWatch.put("com.google.android.talk", "");
+                        if(scannedDevices.keySet().size() > 0) {
+                            appWatch.put("com.google.android.talk", "BLE");
                         } else {
                             if(appWatch.containsKey("com.google.android.talk")) {
-                                appWatch.remove("com.google.android.talk");
+                                try {
+                                    if (appWatch.get("com.google.android.talk").contains("BLE")) {
+                                        appWatch.remove("com.google.android.talk");
+                                    }
+                                } catch (NullPointerException ignored) {}
                             }
-                        }*/
+                        }
 
                         //Check for updated apps
                         if(InstalledApps.appsChanged()) {
