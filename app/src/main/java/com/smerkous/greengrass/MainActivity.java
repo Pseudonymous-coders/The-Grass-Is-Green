@@ -8,14 +8,23 @@ import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.request.target.SimpleTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.smerkous.greengrass.ble.BleUtils;
 import com.smerkous.greengrass.services.GrassService;
 import com.smerkous.greengrass.util.Dialogs;
@@ -26,6 +35,7 @@ public class MainActivity extends AppCompatActivity implements BleUtils.ResetBlu
     public static final int REQUEST_BLUETOOTH = 1;
     public static final int PERMISSION_REQUEST_LOCATION = 1;
     public static boolean isBoot = false;
+    private RelativeLayout layout;
 
     public static void Log(String toLog) {
         Log.d("TheGrassIsGreen", toLog);
@@ -36,6 +46,8 @@ public class MainActivity extends AppCompatActivity implements BleUtils.ResetBlu
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        setVisibility(true);
+
         if(savedInstanceState == null) {
             Log("Starting the main activity");
         } else {
@@ -44,6 +56,7 @@ public class MainActivity extends AppCompatActivity implements BleUtils.ResetBlu
                     Log("Requesting for bluetooth permissions...");
                     Intent enableBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                     startActivityForResult(enableBluetooth, REQUEST_BLUETOOTH);
+                    setVisibility(false);
                 }
             } catch(NullPointerException ignored) {}
 
@@ -52,6 +65,24 @@ public class MainActivity extends AppCompatActivity implements BleUtils.ResetBlu
              } catch (NullPointerException ignored) {}
         }
 
+        layout = findViewById(R.id.main_layout);
+        Glide.with(this)
+                .asDrawable()
+                .load(R.drawable.grass_meadow)
+                .apply(RequestOptions.centerCropTransform())
+                .into(new SimpleTarget<Drawable>() {
+                    @Override
+                    public void onResourceReady(@NonNull Drawable resource, @Nullable Transition<? super Drawable> transition) {
+                        layout.setBackground(resource);
+                    }
+                });
+
+        //Make the image round
+        Glide.with(this)
+                .asDrawable()
+                .load(R.drawable.profile)
+                .apply(RequestOptions.circleCropTransform())
+                .into((ImageView) findViewById(R.id.profile_image));
 
         if(!isGrassServiceRunning()) {
             Log("The grass service is not running! Starting now...");
@@ -59,6 +90,11 @@ public class MainActivity extends AppCompatActivity implements BleUtils.ResetBlu
         }
 
         requestPermissions();
+    }
+
+    public void setVisibility(boolean visible) {
+        findViewById(R.id.profile_image).setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
+        findViewById(R.id.profile_text).setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
     }
 
     @Override
@@ -75,16 +111,17 @@ public class MainActivity extends AppCompatActivity implements BleUtils.ResetBlu
                 if(resCode == Activity.RESULT_OK) {
                     Log("Bluetooth enabled! Restarting service...");
 
-                    if(isBoot) {
+                    setVisibility(true);
+                    /*if(isBoot) {
                         Log("Started at boot... going home");
-                        Intent startMain = new Intent(Intent.ACTION_MAIN);
-                        startMain.addCategory(Intent.CATEGORY_HOME);
-                        startMain.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(startMain);
-                    }
 
+                    }*/
                     stopService(new Intent(getApplicationContext(), GrassService.class));
                     startService(new Intent(getApplicationContext(), GrassService.class));
+                    Intent startMain = new Intent(Intent.ACTION_MAIN);
+                    startMain.addCategory(Intent.CATEGORY_HOME);
+                    startMain.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(startMain);
                 } else if(resCode == Activity.RESULT_CANCELED) {
                     Dialogs.ErrorDialog(this, "You are required to have bluetooth enabled", new Dialogs.ClickListener() {
                         @Override
@@ -94,6 +131,7 @@ public class MainActivity extends AppCompatActivity implements BleUtils.ResetBlu
                         }
                     });
                     Log("The user declined Bluetooth permissions");
+                    setVisibility(false);
                 }
                 break;
         }
@@ -127,7 +165,9 @@ public class MainActivity extends AppCompatActivity implements BleUtils.ResetBlu
             e.printStackTrace();
         }
 
-        manageBluetooth(getBaseContext(), this, true);
+        if(!manageBluetooth(getBaseContext(), this, true)) {
+            setVisibility(false);
+        }
     }
 
     @Override
@@ -136,6 +176,7 @@ public class MainActivity extends AppCompatActivity implements BleUtils.ResetBlu
             case PERMISSION_REQUEST_LOCATION: {
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log("Location permission granted");
+                    setVisibility(true);
                 } else {
                     Toast.makeText(getApplicationContext(), "Location will be required.", Toast.LENGTH_LONG).show();
                     Log("Scanning was not allowed");

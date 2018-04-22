@@ -15,14 +15,11 @@ import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
 import android.view.accessibility.AccessibilityEvent;
-import android.view.accessibility.AccessibilityWindowInfo;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -31,15 +28,12 @@ import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.smerkous.greengrass.BlockAppActivity;
 import com.smerkous.greengrass.MainActivity;
 import com.smerkous.greengrass.R;
-import com.smerkous.greengrass.apps.BlockedApp;
 import com.smerkous.greengrass.apps.InstalledApps;
 import com.smerkous.greengrass.ble.BleDevicesScanner;
 import com.smerkous.greengrass.ble.BleUtils;
 import com.smerkous.greengrass.ble.BluetoothBeacon;
 import com.smerkous.greengrass.util.Dialogs;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +53,7 @@ public class GrassService extends AccessibilityService implements BleUtils.Reset
     private static BleDevicesScanner BLEScanner = null;
     private static HashMap<String, String> appWatch = new HashMap<>();
     private static BluetoothAdapter adapter;
-    private static String user = "David";
+    public static String user = "David";
     private FirebaseAuth auth;
     private FirebaseFirestore database;
 
@@ -68,9 +62,7 @@ public class GrassService extends AccessibilityService implements BleUtils.Reset
         String packageName = event.getPackageName().toString();
         if(appWatch.containsKey(packageName)) {
             Log("Window focused on " + event.getPackageName());
-            Intent block = new Intent(getApplicationContext(), BlockAppActivity.class);
-            block.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(block);
+            blockApp(packageName);
         }
     }
 
@@ -156,6 +148,18 @@ public class GrassService extends AccessibilityService implements BleUtils.Reset
                 Log("User is not in the database!");
             }
         }
+    }
+
+    void blockApp(final String packageName) {
+        Intent block = new Intent(getApplicationContext(), BlockAppActivity.class);
+        block.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_ACTIVITY_NEW_TASK);
+        block.putExtra("package", packageName);
+        if(appWatch.containsKey(packageName)) {
+            block.putExtra("ble", appWatch.get(packageName).contains("BLE"));
+        } else {
+            block.putExtra("ble", false);
+        }
+        startActivity(block);
     }
 
     void checkBLEStatus() {
@@ -255,7 +259,7 @@ public class GrassService extends AccessibilityService implements BleUtils.Reset
         isReady = locMode != Settings.Secure.LOCATION_MODE_OFF;
 
         if(!isReady) {
-            //REPORT THAT THE LOCATION SERVICES ARE
+            //REPORT THAT THE LOCATION SERVICES ARE NOT ENABLED
             Log("Failed to get location services");
         }
         return isReady;
@@ -403,13 +407,17 @@ public class GrassService extends AccessibilityService implements BleUtils.Reset
                             }
                         }
 
-                        /*if(scannedDevices.keySet().size() > 0) {
-                            appWatch.put("com.google.android.talk", "");
+                        if(scannedDevices.keySet().size() > 0) {
+                            appWatch.put("com.google.android.talk", "BLE");
                         } else {
                             if(appWatch.containsKey("com.google.android.talk")) {
-                                appWatch.remove("com.google.android.talk");
+                                try {
+                                    if (appWatch.get("com.google.android.talk").contains("BLE")) {
+                                        appWatch.remove("com.google.android.talk");
+                                    }
+                                } catch (NullPointerException ignored) {}
                             }
-                        }*/
+                        }
 
                         //Check for updated apps
                         if(InstalledApps.appsChanged()) {
@@ -425,10 +433,9 @@ public class GrassService extends AccessibilityService implements BleUtils.Reset
                             //Log(getRootInActiveWindow().getPackageName().toString());
                             //Log("Checking...");
                             //Check to see if the current app is invalid
-                            if (appWatch.containsKey(getRootInActiveWindow().getPackageName().toString())) {
-                                Intent block = new Intent(getApplicationContext(), BlockAppActivity.class);
-                                block.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                startActivity(block);
+                            String currentViewablePackage = getRootInActiveWindow().getPackageName().toString();
+                            if (appWatch.containsKey(currentViewablePackage)) {
+                                blockApp(currentViewablePackage);
                             }
                         } catch(NullPointerException ignored) {}
 
