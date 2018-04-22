@@ -1,7 +1,7 @@
 #include <SPI.h>
 #include "Adafruit_BLE.h"
 #include "Adafruit_BluefruitLE_SPI.h"
-#include "Adafruit_BluefruitLE_UART.h"
+#include "Adafruit_BLEGatt.h"
 
 //Common definitions
 #define FACTORYRESET_ENABLE true
@@ -15,7 +15,9 @@
 //Beacon definitions
 #define BEACON_NAME "TheGrassIsGreen"
 #define BEACON_MANUFACTURER_ID "0xFF00"
-#define BEACON_UUID "01-12-23-34-45-56-67-78-89-9A-AB-BC-CD-DE-EF-F0"
+#define BEACON_UUID "CC-FA-23-DD-11-56-67-71-85-9A-AC-AF-EA-AA-40-FF"
+#define BEACON_SERVICE_ID 0xEEFF
+#define BEACON_SERVICE_UUID "04-FA-5D-90-CE-11-56-0A-35"
 #define BEACON_MAJOR "0x0000"
 #define BEACON_MINOR "0x0000"
 #define BEACON_RSSI_1M "-54"
